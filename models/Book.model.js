@@ -71,6 +71,12 @@ const BookModel = {
     let book;
 
     try {
+      book = await Book.findOne({_id});
+
+      if (book == null) {
+        return null;
+      }
+
       book = await Book.findOneAndUpdate({_id}, {
         $push: {
           comments: comment,
@@ -93,9 +99,11 @@ const BookModel = {
     try {
       book = await Book.findOne({_id});
 
-      if (book) {
-        await Book.deleteOne({_id});
+      if (book == null) {
+        return null;
       }
+
+      await Book.deleteOne({_id});
     } catch (err) {
       console.error(err);
       throw new Error('Cannot delete book');
