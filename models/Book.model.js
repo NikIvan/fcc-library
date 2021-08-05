@@ -42,7 +42,7 @@ const BookModel = {
     let book;
 
     try {
-      book = await Book.find({_id}, { __v: 0 });
+      book = await Book.findOne({_id}, { __v: 0 });
     } catch (err) {
       console.error(err);
       throw new Error('Cannot get book');
