@@ -3,9 +3,11 @@
 const express     = require('express');
 const bodyParser  = require('body-parser');
 const cors        = require('cors');
+const mongoose = require('mongoose');
 require('dotenv').config();
 
 const apiRoutes         = require('./routes/api.js');
+const models            = require('./models');
 const fccTestingRoutes  = require('./routes/fcctesting.js');
 const runner            = require('./test-runner');
 
@@ -38,20 +40,47 @@ app.use(function(req, res, next) {
 });
 
 //Start our server and tests!
-app.listen(process.env.PORT || 3000, function () {
-  console.log("Listening on port " + process.env.PORT);
-  if(process.env.NODE_ENV==='test') {
-    console.log('Running Tests...');
-    setTimeout(function () {
-      try {
-        runner.run();
-      } catch(e) {
-        let error = e;
-          console.log('Tests are not valid:');
-          console.log(error);
-      }
-    }, 1500);
+const port = process.env.PORT || 3000
+const {DB} = process.env;
+
+async function main() {
+  let connection;
+
+  try {
+    connection = await mongoose.connect(DB, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      useFindAndModify: false,
+      useCreateIndex: true,
+      poolSize: 50,
+    });
+    console.log('Database connected');
+
+    models.init(connection);
+  } catch (err) {
+    console.error('Cannot connect to database');
+    throw err;
   }
-});
+
+  app.listen(port, function () {
+    console.log(`Listening on port ${port}`);
+
+    if (process.env.NODE_ENV === 'test') {
+      console.log('Running Tests...');
+
+      setTimeout( () => {
+        try {
+          runner.run();
+        } catch(e) {
+          let error = e;
+            console.log('Tests are not valid:');
+            console.log(error);
+        }
+      }, 1500);
+    }
+  });
+}
+
+main().catch((err) => console.error(err));
 
 module.exports = app; //for unit/functional testing
