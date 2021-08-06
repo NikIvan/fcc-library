@@ -9,6 +9,7 @@
 'use strict';
 
 const BookService = require('../services/Book.service.js');
+const {validateAddBook, validateId, validateComment} = require('../validators/api.validators.js');
 
 module.exports = function (app) {
 
@@ -27,10 +28,13 @@ module.exports = function (app) {
     })
 
     .post(async (req, res) => {
-      const {title} = req.body;
+      let title;
       let book;
 
-      if (title == null || title === '') {
+      try {
+        const body = await validateAddBook(req.body);
+        title = body.title;
+      } catch (err) {
         return res.send('missing required field title');
       }
 
@@ -57,8 +61,14 @@ module.exports = function (app) {
 
   app.route('/api/books/:id')
     .get(async (req, res) => {
-      const bookId = req.params.id;
+      let bookId;
       let book;
+
+      try {
+        bookId = await validateId(req.params.id);
+      } catch (err) {
+        return res.send('missing required fields');
+      }
 
       try {
         book = await BookService.getBook(bookId);
@@ -74,11 +84,19 @@ module.exports = function (app) {
     })
 
     .post(async (req, res) => {
-      const bookId = req.params.id;
-      const {comment} = req.body;
+      let bookId;
+      let comment;
       let book;
 
-      if (comment == null || comment === '') {
+      try {
+        const validationResults = await Promise.all([
+          validateId(req.params.id),
+          validateComment(req.body.comment),
+        ]);
+
+        bookId = validationResults[0];
+        comment = validationResults[1];
+      } catch (err) {
         return res.send('missing required field comment');
       }
 
@@ -96,8 +114,14 @@ module.exports = function (app) {
     })
 
     .delete(async (req, res) => {
-      let bookId = req.params.id;
+      let bookId;
       let book;
+
+      try {
+        bookId = await validateId(req.params.id);
+      } catch (err) {
+        return res.send('Invalid id');
+      }
 
       try {
         book = await BookService.deleteBook(bookId);
